@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/producto.dart';
+import 'package:provider/provider.dart';
+import '../provider/cart_provider.dart';
 
 // ProductoDetalleScreen
 class ProductoDetalleScreen extends StatelessWidget {
@@ -83,14 +85,46 @@ class ProductoDetalleScreen extends StatelessWidget {
                   Positioned(
                     bottom: 20,
                     right: 20,
-                    child: FloatingActionButton.extended(
-                      onPressed: () {},
-                      backgroundColor: Colors.blue,
-                      icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
-                      label: const Text(
-                        "Agregar",
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
+                    child: Consumer<CartProvider>( // Usamos Consumer para escuchar cambios
+                      builder: (context, cart, child) {
+                        if (cart.isLoading) {
+                          return const FloatingActionButton(
+                            onPressed: null,
+                            backgroundColor: Colors.grey,
+                            child: CircularProgressIndicator(color: Colors.white),
+                          );
+                        }
+
+                        return FloatingActionButton.extended(
+                          onPressed: () async {
+                            // Llamamos al provider
+                            bool exito = await cart.addItem(producto);
+                            
+                            if (context.mounted) {
+                              if (exito) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("${producto.nombre} agregado al carrito")),
+                                );
+                              } else {
+                                // Mostrar el error simulado (backend mock)
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(cart.errorMessage ?? "Error desconocido"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                cart.clearError();
+                              }
+                            }
+                          },
+                          backgroundColor: Colors.blue,
+                          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                          label: const Text(
+                            "Agregar",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ],

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; 
 import 'screens/home_screen.dart';
+import 'provider/cart_provider.dart'; 
 
 void main() {
-  runApp(const MiApp());
+  runApp(
+    // Inyectamos el estado en la raíz
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+      ],
+      child: const MiApp(),
+    ),
+  );
 }
 
 class MiApp extends StatelessWidget {
