@@ -13,75 +13,128 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<CartProvider>(
       builder: (context, cart, _) {
-        // 1. Loading inicial
+        // 1. Loading
         if (cart.isLoading && cart.items.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        // 2. Estado Vacío
+        // 2. Empty State
         if (cart.items.isEmpty) {
           return _buildEmptyState(context);
         }
 
-        // 3. Contenido del Carrito
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                itemCount: cart.items.length,
-                itemBuilder: (context, index) {
-                  return _buildCartItem(context, cart.items[index], cart);
-                },
-              ),
-            ),
-            _buildBottomSummary(context, cart),
-          ],
+        // 3. Layout Responsivo
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // Si el ancho es mayor a 800px (Tablet/Desktop)
+            if (constraints.maxWidth >= 800) {
+              return _buildDesktopLayout(context, cart);
+            }
+            // Si es Móvil
+            return _buildMobileLayout(context, cart);
+          },
         );
       },
+    );
+  }
+
+  // --- LAYOUT MÓVIL (Vertical) ---
+  Widget _buildMobileLayout(BuildContext context, CartProvider cart) {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            itemCount: cart.items.length,
+            itemBuilder: (context, index) {
+              return _buildCartItem(context, cart.items[index], cart);
+            },
+          ),
+        ),
+        // En móvil, el resumen va pegado abajo
+        _buildOrderSummary(context, cart, isDesktop: false),
+      ],
+    );
+  }
+
+  // --- LAYOUT ESCRITORIO (Dos Columnas) ---
+  Widget _buildDesktopLayout(BuildContext context, CartProvider cart) {
+    return Padding(
+      padding: const EdgeInsets.all(32.0), // Más margen en desktop
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // COLUMNA IZQUIERDA: Lista de productos (Ocupa más espacio)
+          Expanded(
+            flex: 7, // 70% del espacio
+            child: ListView.separated(
+              itemCount: cart.items.length,
+              separatorBuilder: (ctx, i) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                return _buildCartItem(context, cart.items[index], cart);
+              },
+            ),
+          ),
+          
+          const SizedBox(width: 32), // Separación entre columnas
+
+          // COLUMNA DERECHA: Resumen de Compra (Fijo como tarjeta)
+          Expanded(
+            flex: 4, // 40% del espacio
+            child: SingleChildScrollView(
+              child: _buildOrderSummary(context, cart, isDesktop: true),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // --- ESTADO VACÍO ---
   Widget _buildEmptyState(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.shopping_bag_outlined,
-                size: 80, color: Colors.blue[600]),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Tu carrito está vacío',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '¡Descubre productos increíbles y agrégalos aquí!',
-            style: TextStyle(color: Colors.grey[600], fontSize: 15),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: onGoHome,
-            icon: const Icon(Icons.explore),
-            label: const Text('Explorar Tienda'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(25),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
+              child: Icon(Icons.shopping_bag_outlined,
+                  size: 80, color: Colors.blue[600]),
             ),
-          )
-        ],
+            const SizedBox(height: 24),
+            const Text(
+              'Tu carrito está vacío',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '¡Descubre productos increíbles y agrégalos aquí!',
+              style: TextStyle(color: Colors.grey[600], fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: onGoHome,
+              icon: const Icon(Icons.explore),
+              label: const Text('Explorar Tienda'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -94,7 +147,7 @@ class CartScreen extends StatelessWidget {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: const EdgeInsets.only(bottom: 0), // El margen lo maneja el layout
         padding: const EdgeInsets.only(right: 24),
         decoration: BoxDecoration(
           color: Colors.red[50],
@@ -116,7 +169,6 @@ class CartScreen extends StatelessWidget {
         await cart.removeItem(item.producto.id);
 
         if (context.mounted) {
-          // Usamos TopSnackBar para notificar
           if (cart.errorMessage != null) {
             showTopSnackBar(context, cart.errorMessage!, isError: true);
             cart.clearError();
@@ -126,7 +178,8 @@ class CartScreen extends StatelessWidget {
         }
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        // En desktop usamos separatorBuilder, en mobile margin. 
+        // Para simplificar, usamos un container con decoración simple.
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -271,13 +324,17 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  // --- RESUMEN DE COMPRA ---
-  Widget _buildBottomSummary(BuildContext context, CartProvider cart) {
+  // --- RESUMEN DE COMPRA (Adaptable) ---
+  Widget _buildOrderSummary(BuildContext context, CartProvider cart, {required bool isDesktop}) {
+    // Si es desktop, parece una tarjeta flotante. Si es móvil, parece un BottomSheet.
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        // Bordes: En Desktop todos redondeados, en Móvil solo los de arriba
+        borderRadius: isDesktop 
+            ? BorderRadius.circular(24) 
+            : const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -287,17 +344,26 @@ class CartScreen extends StatelessWidget {
         ],
       ),
       child: SafeArea(
+        top: false, // En desktop no necesitamos safe area arriba
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (isDesktop) ...[
+               const Text("Resumen del Pedido", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+               const SizedBox(height: 20),
+            ],
+            
             _buildSummaryRow('Subtotal', cart.subtotal),
             if (cart.descuento > 0)
               _buildSummaryRow('Descuento', -cart.descuento, isDiscount: true),
             _buildSummaryRow('Impuestos (12%)', cart.impuestos),
+            
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Divider(height: 1),
             ),
+            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
