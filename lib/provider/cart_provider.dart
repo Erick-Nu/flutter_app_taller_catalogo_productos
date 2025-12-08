@@ -22,6 +22,24 @@ class CartProvider extends ChangeNotifier {
   double get impuestos => (subtotal - descuento) * 0.12;
   double get total => subtotal - descuento + impuestos;
 
+  // Cargar estado inicial del carrito
+  Future<void> loadCart() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final response = await _service.getCart();
+
+    if (response.success && response.data != null) {
+      _items = response.data!;
+    } else {
+      _errorMessage = response.message ?? "No se pudo cargar el carrito";
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
   // Acción: Agregar
   Future<bool> addItem(Producto producto) async {
     _isLoading = true;
@@ -52,6 +70,21 @@ class CartProvider extends ChangeNotifier {
     } else {
       _errorMessage = response.message;
     }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> clearCart() async {
+    _isLoading = true;
+    notifyListeners();
+
+    final response = await _service.clearCart();
+    if (response.success) {
+      _items = [];
+    } else {
+      _errorMessage = response.message ?? "No se pudo vaciar el carrito";
+    }
+
     _isLoading = false;
     notifyListeners();
   }

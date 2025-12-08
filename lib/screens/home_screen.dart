@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/producto.dart';
+import '../provider/cart_provider.dart';
 import '../widgets/producto_card.dart';
 import '../widgets/barra_navegacion.dart';
 
@@ -16,6 +18,21 @@ class _HomeScreenState extends State<HomeScreen> {
   int _indiceCategoriaSeleccionada = 0;
 
   final List<String> categorias = ['Todos', 'Electrónica', 'Fotografía', 'Accesorios'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<CartProvider>().loadCart();
+    });
+  }
+
+  List<Producto> get _productosFiltrados {
+    if (_indiceCategoriaSeleccionada == 0) return productosEjemplo;
+    final categoria = categorias[_indiceCategoriaSeleccionada];
+    return productosEjemplo.where((p) => p.categoria == categoria).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +58,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildContenidoPrincipal() {
+    if (_indiceNavegacion == 3) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: _buildCartSection(),
+      );
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         bool esDesktop = constraints.maxWidth >= 900;
@@ -163,6 +187,31 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       actions: [
+        Consumer<CartProvider>(
+          builder: (context, cart, _) {
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+                  onPressed: () => setState(() => _indiceNavegacion = 3),
+                ),
+                if (cart.itemCount > 0)
+                  Positioned(
+                    right: 10,
+                    top: 10,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                      child: Text(
+                        cart.itemCount.toString(),
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
         IconButton(icon: const Icon(Icons.notifications_outlined, color: Colors.black), onPressed: () {}),
       ],
     );
@@ -273,6 +322,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildGridProductos() {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (_productosFiltrados.isEmpty) {
+          return const Center(
+            child: Text(
+              'No hay productos en esta categoría',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          );
+        }
+
         int columnas;
         double childAspectRatio;
 
@@ -299,12 +357,171 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSpacing: 16,
             childAspectRatio: childAspectRatio,
           ),
-          itemCount: productosEjemplo.length,
+          itemCount: _productosFiltrados.length,
           itemBuilder: (context, index) {
-            return ProductoCard(producto: productosEjemplo[index]);
+            return ProductoCard(producto: _productosFiltrados[index]);
           },
         );
       },
+    );
+  }
+
+  Widget _buildCartSection() {
+    return Consumer<CartProvider>(
+      builder: (context, cart, _) {
+        if (cart.isLoading && cart.items.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (cart.items.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
+                const SizedBox(height: 12),
+                const Text('Tu carrito está vacío', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => setState(() => _indiceNavegacion = 0),
+                  child: const Text('Explorar productos'),
+                )
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Carrito',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                itemCount: cart.items.length,
+                separatorBuilder: (_, __) => const Divider(),
+                itemBuilder: (context, index) {
+                  final item = cart.items[index];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.blue[50],
+                      child: const Icon(Icons.shopping_bag_outlined, color: Colors.blue),
+                    ),
+                    title: Text(item.producto.nombre),
+                    subtitle: Text('Cantidad: ${item.cantidad}  •  ${item.producto.categoria}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Eliminar',
+                          onPressed: cart.isLoading
+                              ? null
+                              : () async {
+                                  await cart.removeItem(item.producto.id);
+                                  if (cart.errorMessage != null && context.mounted) {
+                                    _mostrarSnack(context, cart.errorMessage!, esError: true);
+                                    cart.clearError();
+                                  }
+                                },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        IconButton(
+                          tooltip: 'Agregar uno más',
+                          onPressed: cart.isLoading
+                              ? null
+                              : () async {
+                                  final ok = await cart.addItem(item.producto);
+                                  if (!ok && context.mounted) {
+                                    _mostrarSnack(context, cart.errorMessage ?? 'No se pudo agregar', esError: true);
+                                    cart.clearError();
+                                  }
+                                },
+                          icon: const Icon(Icons.add_circle_outline),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            _buildResumenCompra(cart),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildResumenCompra(CartProvider cart) {
+    return Card(
+      margin: const EdgeInsets.only(top: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Resumen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            _buildResumenValor('Subtotal', cart.subtotal),
+            _buildResumenValor('Descuento', cart.descuento),
+            _buildResumenValor('Impuestos', cart.impuestos),
+            const Divider(),
+            _buildResumenValor('Total', cart.total, isTotal: true),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: cart.isLoading
+                        ? null
+                        : () async {
+                            await cart.clearCart();
+                            if (cart.errorMessage != null && context.mounted) {
+                              _mostrarSnack(context, cart.errorMessage!, esError: true);
+                              cart.clearError();
+                            }
+                          },
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                    label: const Text('Vaciar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: cart.isLoading ? null : () {},
+                    icon: const Icon(Icons.payment),
+                    label: const Text('Pagar'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResumenValor(String label, double valor, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
+          Text(' ${valor.toStringAsFixed(2)}', style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarSnack(BuildContext context, String mensaje, {bool esError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        backgroundColor: esError ? Colors.red : null,
+      ),
     );
   }
 }
