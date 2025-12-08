@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/producto.dart';
 import 'package:provider/provider.dart';
 import '../provider/cart_provider.dart';
+import '../widgets/top_snackbar.dart'; // <--- 1. Importamos la utilidad
 
 // ProductoDetalleScreen
 class ProductoDetalleScreen extends StatelessWidget {
@@ -25,18 +26,22 @@ class ProductoDetalleScreen extends StatelessWidget {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Image.network(
-                      'https://placehold.co/600x800/png?text=${producto.nombre.replaceAll(" ", "+")}',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, size: 100),
-                        );
-                      },
+                    child: Hero(
+                      // Animación compartida con la tarjeta
+                      tag: producto.id,
+                      child: Image.network(
+                        producto.imagenUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.broken_image,
+                                size: 100, color: Colors.grey),
+                          );
+                        },
+                      ),
                     ),
                   ),
-
                   Positioned(
                     top: 50,
                     left: 20,
@@ -45,12 +50,12 @@ class ProductoDetalleScreen extends StatelessWidget {
                       onTap: () => Navigator.pop(context),
                     ),
                   ),
-
                   Positioned(
                     top: 110,
                     left: 20,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.redAccent,
                         borderRadius: BorderRadius.circular(20),
@@ -71,7 +76,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
                   Positioned(
                     top: 50,
                     right: 20,
@@ -81,17 +85,18 @@ class ProductoDetalleScreen extends StatelessWidget {
                       onTap: () {},
                     ),
                   ),
-
                   Positioned(
                     bottom: 20,
                     right: 20,
-                    child: Consumer<CartProvider>( // Usamos Consumer para escuchar cambios
+                    child: Consumer<CartProvider>(
+                      // Usamos Consumer para escuchar cambios
                       builder: (context, cart, child) {
                         if (cart.isLoading) {
                           return const FloatingActionButton(
                             onPressed: null,
                             backgroundColor: Colors.grey,
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child:
+                                CircularProgressIndicator(color: Colors.white),
                           );
                         }
 
@@ -99,29 +104,30 @@ class ProductoDetalleScreen extends StatelessWidget {
                           onPressed: () async {
                             // Llamamos al provider
                             bool exito = await cart.addItem(producto);
-                            
+
                             if (context.mounted) {
                               if (exito) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("${producto.nombre} agregado al carrito")),
-                                );
+                                // <--- 2. Notificación de Éxito (Arriba)
+                                showTopSnackBar(context,
+                                    "${producto.nombre} agregado al carrito");
                               } else {
-                                // Mostrar el error simulado (backend mock)
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(cart.errorMessage ?? "Error desconocido"),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                                // <--- 3. Notificación de Error (Arriba)
+                                showTopSnackBar(
+                                    context,
+                                    cart.errorMessage ?? "Error desconocido",
+                                    isError: true);
                                 cart.clearError();
                               }
                             }
                           },
                           backgroundColor: Colors.blue,
-                          icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                          icon: const Icon(Icons.shopping_cart_outlined,
+                              color: Colors.white),
                           label: const Text(
                             "Agregar",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold),
                           ),
                         );
                       },
@@ -130,7 +136,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -155,7 +160,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-
                   Text(
                     "\$${producto.precio.toStringAsFixed(2)}",
                     style: const TextStyle(
@@ -165,7 +169,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   const Text(
                     "Descripción detallada",
                     style: TextStyle(
@@ -174,7 +177,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-
                   Text(
                     producto.descripcion,
                     style: TextStyle(
@@ -184,7 +186,6 @@ class ProductoDetalleScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 40),
-
                   SizedBox(
                     width: double.infinity,
                     height: 55,

@@ -4,6 +4,7 @@ import '../models/producto.dart';
 import '../provider/cart_provider.dart';
 import '../widgets/producto_card.dart';
 import '../widgets/barra_navegacion.dart';
+import 'cart_screen.dart'; // Importamos la nueva pantalla
 
 // HomeScreen
 class HomeScreen extends StatefulWidget {
@@ -58,10 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildContenidoPrincipal() {
+    // Si el índice es 3 (Carrito), mostramos la nueva pantalla CartScreen
     if (_indiceNavegacion == 3) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: _buildCartSection(),
+      return CartScreen(
+        onGoHome: () => setState(() => _indiceNavegacion = 0),
       );
     }
 
@@ -363,165 +364,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildCartSection() {
-    return Consumer<CartProvider>(
-      builder: (context, cart, _) {
-        if (cart.isLoading && cart.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (cart.items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
-                const SizedBox(height: 12),
-                const Text('Tu carrito está vacío', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => setState(() => _indiceNavegacion = 0),
-                  child: const Text('Explorar productos'),
-                )
-              ],
-            ),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Carrito',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                itemCount: cart.items.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, index) {
-                  final item = cart.items[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.blue[50],
-                      child: const Icon(Icons.shopping_bag_outlined, color: Colors.blue),
-                    ),
-                    title: Text(item.producto.nombre),
-                    subtitle: Text('Cantidad: ${item.cantidad}  •  ${item.producto.categoria}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: 'Eliminar',
-                          onPressed: cart.isLoading
-                              ? null
-                              : () async {
-                                  await cart.removeItem(item.producto.id);
-                                  if (cart.errorMessage != null && context.mounted) {
-                                    _mostrarSnack(context, cart.errorMessage!, esError: true);
-                                    cart.clearError();
-                                  }
-                                },
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                        IconButton(
-                          tooltip: 'Agregar uno más',
-                          onPressed: cart.isLoading
-                              ? null
-                              : () async {
-                                  final ok = await cart.addItem(item.producto);
-                                  if (!ok && context.mounted) {
-                                    _mostrarSnack(context, cart.errorMessage ?? 'No se pudo agregar', esError: true);
-                                    cart.clearError();
-                                  }
-                                },
-                          icon: const Icon(Icons.add_circle_outline),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            _buildResumenCompra(cart),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildResumenCompra(CartProvider cart) {
-    return Card(
-      margin: const EdgeInsets.only(top: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Resumen', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _buildResumenValor('Subtotal', cart.subtotal),
-            _buildResumenValor('Descuento', cart.descuento),
-            _buildResumenValor('Impuestos', cart.impuestos),
-            const Divider(),
-            _buildResumenValor('Total', cart.total, isTotal: true),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: cart.isLoading
-                        ? null
-                        : () async {
-                            await cart.clearCart();
-                            if (cart.errorMessage != null && context.mounted) {
-                              _mostrarSnack(context, cart.errorMessage!, esError: true);
-                              cart.clearError();
-                            }
-                          },
-                    icon: const Icon(Icons.delete_sweep_outlined),
-                    label: const Text('Vaciar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: cart.isLoading ? null : () {},
-                    icon: const Icon(Icons.payment),
-                    label: const Text('Pagar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResumenValor(String label, double valor, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(' ${valor.toStringAsFixed(2)}', style: TextStyle(fontWeight: isTotal ? FontWeight.bold : FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  void _mostrarSnack(BuildContext context, String mensaje, {bool esError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensaje),
-        backgroundColor: esError ? Colors.red : null,
-      ),
     );
   }
 }

@@ -16,54 +16,54 @@ class Producto {
   });
 }
 
-// Datos de ejemplo para el taller
+// Datos de ejemplo con IMÁGENES REALES (Unsplash)
 List<Producto> productosEjemplo = [
   Producto(
     id: '1',
     nombre: 'Laptop Pro',
-    descripcion: 'Laptop de alto rendimiento',
+    descripcion: 'Laptop de alto rendimiento para profesionales creativos.',
     precio: 1299.99,
-    imagenUrl: 'laptop',
+    imagenUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
     categoria: 'Electrónica',
   ),
   Producto(
     id: '2',
-    nombre: 'Auriculares BT',
-    descripcion: 'Auriculares inalámbricos',
+    nombre: 'Auriculares Noise-C',
+    descripcion: 'Auriculares inalámbricos con cancelación de ruido activa.',
     precio: 89.99,
-    imagenUrl: 'headphones',
+    imagenUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
     categoria: 'Electrónica',
   ),
   Producto(
     id: '3',
-    nombre: 'Smartwatch',
-    descripcion: 'Reloj inteligente deportivo',
+    nombre: 'Smartwatch Sport',
+    descripcion: 'Reloj inteligente con monitor cardíaco y GPS integrado.',
     precio: 249.99,
-    imagenUrl: 'watch',
+    imagenUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
     categoria: 'Electrónica',
   ),
   Producto(
     id: '4',
-    nombre: 'Cámara Digital',
-    descripcion: 'Cámara profesional 4K',
+    nombre: 'Cámara Mirrorless',
+    descripcion: 'Cámara digital profesional 4K con lentes intercambiables.',
     precio: 599.99,
-    imagenUrl: 'camera',
+    imagenUrl: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&q=80',
     categoria: 'Fotografía',
   ),
   Producto(
     id: '5',
     nombre: 'Teclado Mecánico',
-    descripcion: 'Teclado gaming RGB',
-    precio: 129.99,
-    imagenUrl: 'keyboard',
+    descripcion: 'Teclado gaming RGB con switches azules táctiles.',
+    precio: 129.98,
+    imagenUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&q=80',
     categoria: 'Accesorios',
   ),
   Producto(
     id: '6',
-    nombre: 'Mouse Inalámbrico',
-    descripcion: 'Mouse ergonómico',
+    nombre: 'Mouse Ergonómico',
+    descripcion: 'Mouse inalámbrico vertical para reducir la fatiga.',
     precio: 49.99,
-    imagenUrl: 'mouse',
+    imagenUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=600&q=80',
     categoria: 'Accesorios',
   ),
 ];

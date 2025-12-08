@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/producto.dart';
-import '../screens/producto_detalle_screen.dart'; // <--- IMPORTANTE
+import '../screens/producto_detalle_screen.dart';
 
 class ProductoCard extends StatelessWidget {
   final Producto producto;
 
-  const ProductoCard({
-    super.key,
-    required this.producto,
-  });
+  const ProductoCard({super.key, required this.producto});
 
   @override
   Widget build(BuildContext context) {
-    // GESTURE DETECTOR: Envuelve todo para detectar el tap
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -23,120 +19,114 @@ class ProductoCard extends StatelessWidget {
         );
       },
       child: Container(
-        // CONTAINER: Widget para decoración y dimensiones
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              blurRadius: 8,
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        // STACK: Permite superponer widgets (como capas)
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // COLUMN: Organiza widgets verticalmente
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Imagen del producto
-                Expanded(
-                  flex: 3,
-                  child: Container(
+            // --- IMAGEN DEL PRODUCTO ---
+            Expanded(
+              flex: 4, // CAMBIO 1: Damos un poco más de peso a la imagen (opcional) o lo dejamos en 3
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: Hero(
+                  tag: producto.id,
+                  child: Image.network(
+                    producto.imagenUrl,
                     width: double.infinity,
-                    decoration: BoxDecoration(
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey[100],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey[200],
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
-                    ),
-                    child: Icon(
-                      _getIcono(producto.imagenUrl),
-                      size: 60,
-                      color: Colors.grey[600],
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
                     ),
                   ),
                 ),
-                // Información del producto
-                Expanded(
-                  flex: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    // COLUMN anidada para texto
-                    child: Column(
+              ),
+            ),
+            
+            // --- INFORMACIÓN ---
+            Expanded(
+              flex: 3, // CAMBIO 2: Aumentamos el espacio para el texto (Antes era 2)
+              child: Padding(
+                // CAMBIO 3: Reducimos el padding vertical de 12 a 8 para ganar espacio
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           producto.nombre,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 15,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 4),
                         Text(
                           producto.descripcion,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                        // ROW: Organiza widgets horizontalmente
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '\$${producto.precio.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.green,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.add_shopping_cart,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ],
-            ),
-            // POSITIONED: Posiciona un widget en coordenadas específicas dentro del Stack
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'NUEVO',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '\$${producto.precio.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: const BoxDecoration(
+                            color: Colors.black,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -144,25 +134,5 @@ class ProductoCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // Metodo auxiliar para obtener iconos (Igual que en tu código original)
-  IconData _getIcono(String tipo) {
-    switch (tipo) {
-      case 'laptop':
-        return Icons.laptop;
-      case 'headphones':
-        return Icons.headphones;
-      case 'watch':
-        return Icons.watch;
-      case 'camera':
-        return Icons.camera_alt;
-      case 'keyboard':
-        return Icons.keyboard;
-      case 'mouse':
-        return Icons.mouse;
-      default:
-        return Icons.shopping_bag;
-    }
   }
 }
